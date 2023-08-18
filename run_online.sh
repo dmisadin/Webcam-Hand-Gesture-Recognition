@@ -1,12 +1,12 @@
 #!/bin/bash
 python3 online_test.py \
-	--root_path /Users/A.Gunduz/Desktop/git/Real-time-GesRec/\
-	--video_path /data2/EgoGesture/images \
-	--annotation_path annotation_EgoGesture/egogestureall.json \
-	--resume_path_det report/egogesture_resnetl_10_Depth_8_9939.pth \
-	--resume_path_clf report/egogesture_resnext_101_Depth_32_9403.pth  \
+	--root_path 'D:/FESB/zavrsni rad/Real-time-GesRec' \
+	--video_path /datasets/nvgesture/Video_data/class_01/subject10_r2 \
+	--annotation_path annotation_nvGesture/nvall.json \
+	--resume_path_det report/nv_resnetl_10_Depth_8.pth \
+	--resume_path_clf report/nv_resnext_101_Depth_32.pth  \
 	--result_path results \
-	--dataset egogesture    \
+	--dataset nvgesture    \
 	--sample_duration_det 8 \
 	--sample_duration_clf 32 \
 	--model_det resnetl \
@@ -36,3 +36,5 @@ python3 online_test.py \
 	--clf_threshold_final 0.15 \
 	--stride_len 1 \
 	--no_cuda \
+
+	python online_test.py --root_path D:/FESB/zavrsni_rad/Real-time-GesRec --video_path datasets/nvgesture --annotation_path annotation_nvGesture/nvall.json --resume_path_det "report/nvgesture_resnet_1.0x_RGB_16_checkpoint.pth" --resume_path_clf "report/nvgesture_resnext_1.0x_RGB_32_checkpoint.pth" --result_path results --dataset nvgesture --sample_duration_det 16 --sample_duration_clf 32 --model_det resnetl --model_clf resnext --model_depth_det 10 --model_depth_clf 101 --resnet_shortcut_det A --resnet_shortcut_clf B --batch_size 1 --n_classes_det 2 --n_finetune_classes_det 2 --n_classes_clf 25 --n_finetune_classes_clf 25 --n_threads 16 --checkpoint 1 --modality_det RGB --modality_clf RGB --n_val_samples 1 --train_crop random --test_subset test  --det_strategy median --det_queue_size 4 --det_counter 2 --clf_strategy median --clf_queue_size 16 --clf_threshold_pre 0.6 --clf_threshold_final 0.15 --stride_len 1

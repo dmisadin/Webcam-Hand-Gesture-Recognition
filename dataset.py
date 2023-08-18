@@ -196,7 +196,7 @@ def get_online_data(opt, spatial_transform, temporal_transform, target_transform
             spatial_transform,
             temporal_transform,
             target_transform,
-            modality="RGB-D",
+            modality=opt.modality,
             stride_len = opt.stride_len,
             sample_duration=opt.sample_duration)
     if opt.dataset == 'nvgesture':
@@ -208,7 +208,7 @@ def get_online_data(opt, spatial_transform, temporal_transform, target_transform
             spatial_transform,
             temporal_transform,
             target_transform,
-            modality="RGB-D",
+            modality=opt.modality,
             stride_len = opt.stride_len,
             sample_duration=opt.sample_duration)
     

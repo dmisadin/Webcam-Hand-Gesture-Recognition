@@ -114,7 +114,7 @@ def get_annotation(data, whole_path):
 def make_dataset( annotation_path, video_path , whole_path,sample_duration, n_samples_for_each_video, stride_len):
     
     data = load_annotation_data(annotation_path)
-    whole_video_path = os.path.join(video_path,whole_path)
+    whole_video_path = os.path.join(video_path, whole_path.replace('./', ''))
     annotation = get_annotation(data, whole_path)
     class_to_idx = get_class_labels(data)
     idx_to_class = {}
@@ -195,7 +195,7 @@ class NVOnline(data.Dataset):
                  temporal_transform=None,
                  target_transform=None,
                  sample_duration=16,
-                 modality='RGB',
+                 modality='Depth',
                  stride_len = None,
                  get_loader=get_default_video_loader):
 

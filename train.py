@@ -31,6 +31,7 @@ def train_epoch(epoch, data_loader, model, criterion, optimizer, opt,
         loss = criterion(outputs, targets)
 
         losses.update(loss.data, inputs.size(0))
+        # topk=(1,5) inace, ali za detector su samo 2 klase
         prec1, prec5 = calculate_accuracy(outputs.data, targets.data, topk=(1,5))
         top1.update(prec1, inputs.size(0))
         top5.update(prec5, inputs.size(0))

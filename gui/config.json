@@ -1,0 +1,55 @@
+[
+    {
+        "class": 43,
+        "name": "Play/Pause",
+        "action": [
+            "play/pause media"
+        ]
+    },
+    {
+        "class": 80,
+        "name": "Move fingers left",
+        "action": [
+            "previous track"
+        ]
+    },
+    {
+        "class": 81,
+        "name": "Move fingers right",
+        "action": [
+            "next track"
+        ]
+    },
+    {
+        "class": 53,
+        "name": "Put two fingers together",
+        "action": [
+            "ctrl",
+            "x"
+        ]
+    },
+    {
+        "class": 54,
+        "name": "Take two fingers apart",
+        "action": [
+            "ctrl",
+            "v"
+        ]
+    },
+    {
+        "class": 11,
+        "name": "Zoom In",
+        "action": [
+            "ctrl",
+            "+"
+        ]
+    },
+    {
+        "class": 12,
+        "name": "Zoom out",
+        "action": [
+            "ctrl",
+            "-"
+        ]
+    }
+]

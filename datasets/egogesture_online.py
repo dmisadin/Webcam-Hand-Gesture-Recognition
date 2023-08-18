@@ -18,8 +18,9 @@ import pdb
 def pil_loader(path, modality):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, 'rb') as f:
-        #print(path)
         with Image.open(f) as img:
+            if(len(img.getbands()) < 3):
+                print(img.getbands())
             if modality == 'RGB':
                 return img.convert('RGB')
             elif modality == 'Flow':
@@ -29,6 +30,7 @@ def pil_loader(path, modality):
 
 
 def accimage_loader(path, modality):
+    print("entered accimage_loader")
     try:
         import accimage
         return accimage.Image(path)
@@ -58,7 +60,6 @@ def video_loader(video_dir_path, frame_indices, modality, sample_duration, image
                 print(image_path, "------- Does not exist")
                 return video
     elif modality == 'Depth':
-
         for i in frame_indices:
             image_path = os.path.join(video_dir_path.rsplit(os.sep,2)[0] , 'Depth','depth' + video_dir_path[-1], '{:06d}.jpg'.format(i) )
             if os.path.exists(image_path):
@@ -129,18 +130,24 @@ def make_dataset( annotation_path, video_path , whole_path,sample_duration, n_sa
     import glob
 
     n_frames = len(glob.glob(whole_video_path + '/*.jpg'))
-
+    print("Number of frames: " + str(n_frames))
     if not os.path.exists(whole_video_path):
         print(whole_video_path , " does not exist")
     label_list = []
+    last_end = 0
     for i in range(len(annotation)):
         begin_t = int(annotation[i]['start_frame'])
         end_t = int(annotation[i]['end_frame'])
+        last_end = end_t
         for j in range(begin_t,end_t+1):
-            label_list.append(class_to_idx[annotation[i]['label']])
+            label_list.append(class_to_idx[annotation[i]['label']])    
 
+    for k in range(last_end, n_frames):  # For last part of image sequence, label = None (index=83)
+        label_list.append(83)
+
+    #print(len(label_list))
     label_list = np.array(label_list)
-    for _ in range(1,n_frames+1 - sample_duration,stride_len):
+    for _ in range(1, n_frames+1 - sample_duration, stride_len):
         
         sample = {
                 'video': whole_video_path,
@@ -149,7 +156,9 @@ def make_dataset( annotation_path, video_path , whole_path,sample_duration, n_sa
 
             }
         
-        # print(range(_    - int(sample_duration/8), _   ))
+        #print(range(_    - sample_duration, _   ))
+        #print(_)
+        #counts = np.bincount(label_list[np.array(list(range(_    - sample_duration, _   )))])
         counts = np.bincount(label_list[np.array(list(range(_    - int(sample_duration/8), _   )))])
         sample['label'] = np.argmax(counts)
         if n_samples_for_each_video == 1:
@@ -234,7 +243,7 @@ class EgoGestureOnline(data.Dataset):
             self.spatial_transform.randomize_parameters()
             clip = [self.spatial_transform(img) for img in clip]
 
-        im_dim = clip[0].size()[-2:]
+        im_dim = clip[0].size()[-2:] # CHECK THIS
         try:
             clip = torch.cat(clip, 0).view((self.sample_duration, -1) + im_dim).permute(1, 0, 2, 3)
         except Exception as e:
@@ -251,38 +260,6 @@ class EgoGestureOnline(data.Dataset):
 
     def __len__(self):
         return len(self.data)
-
-
-# from target_transforms import ClassLabel, VideoID
-# from target_transforms import Compose as TargetCompose
-
-
-# norm_method = Normalize([0, 0, 0], [1, 1, 1])
-
-
-# spatial_transform = Compose([
-#     #Scale(opt.sample_size),
-#     Scale(112),
-#     CenterCrop(112),
-#     ToTensor(), norm_method
-#     ])
-# temporal_transform = TemporalCenterCrop(8)
-# #temporal_transform = TemporalBeginCrop(opt.sample_duration)
-# #temporal_transform = TemporalEndCrop(opt.sample_duration)
-# target_transform = ClassLabel()
-
-
-# vl = VideoLoader(
-# annotation_path = '/usr/home/kop/MyRes3D-Ahmet/annotation_EgoGesture/egogesturebinary.json',
-# video_path = '/data2/EgoGesture/images',
-# whole_path = 'Subject01/Scene1/Color/rgb1',
-# n_samples_for_each_video=1,
-# spatial_transform=spatial_transform,
-# temporal_transform=None,
-# target_transform=target_transform,
-# sample_duration=8,
-# modality='RGB',
-# get_loader=get_default_video_loader)
 
 
 

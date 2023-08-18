@@ -5,7 +5,7 @@ import glob
 import sys
 from subprocess import call
 
-dataset_path = "/data2/nvGesture"
+dataset_path = "D:/FESB/zavrsni_rad/nvgesture_arch"
 def load_split_nvgesture(file_with_split = './nvgesture_train_correct.lst',list_split = list()):
     file_with_split = os.path.join(dataset_path,file_with_split)
     params_dictionary = dict()
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     file_name = sys.argv[2]
     class_types = sys.argv[3]
 
-    sensors = ["color"]
+    sensors = ["depth"]
     file_lists = dict()
     if subset == 'training':
         file_list = "./nvgesture_train_correct_cvpr2016_v2.lst"

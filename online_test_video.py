@@ -1,9 +1,6 @@
 import os
-import glob
 import json
-import pandas as pd
 import numpy as np
-import csv
 import torch
 import time
 from torch.autograd import Variable
@@ -16,24 +13,38 @@ from model import generate_model
 from mean import get_mean, get_std
 from spatial_transforms import *
 from temporal_transforms import *
-from target_transforms import ClassLabel
-from dataset import get_online_data
-from utils import  AverageMeter, LevenshteinDistance, Queue
+from utils import Queue
 
 import pdb
 import numpy as np
-import datetime
 
+import win32api # https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+from win32con import VK_MEDIA_PLAY_PAUSE, KEYEVENTF_EXTENDEDKEY, VK_MEDIA_NEXT_TRACK, VK_MEDIA_PREV_TRACK, VK_CONTROL, KEYEVENTF_KEYUP, VK_SNAPSHOT
+
+# EgoGesture labels, 84 = 83 classes + 'None'
+labels=["Scroll_hand_towards_right", "Scroll_hand_towards_left", "Scroll_hand_downward", "Scroll_hand_upward", "Scroll_hand_forward", "Scroll_hand_backward", "Cross_index_fingers", "Zoom_in_with_fists", "Zoom_out_with_fists", "Rotate_fists_clockwise", "Rotate_fists_counterclockwise", "Zoom_in_with_fingers", "Zoom_out_with_fingers", "Rotate_fingers_clockwise", "Rotate_fingers_counterclockwise", "Click_with_index_finger", "Sweep_diagonal", "Sweep_circle", "Sweep_cross", "Sweep_checkmark", "Static_fist", "Measure(distance)", "Photo_frame", "Number_0", "Number_1", "Number_2", "Number_3", "Number_4", "Number_5", "Number_6", "Number_7", "Number_8", "Number_9", "OK", "Another_number_3", "Pause", "Shape_C", "Make_a_phone_call", "Wave_hand", "Wave_finger", "Knock", "Beckon", "Palm_to_fist", "Fist_to_Palm", "Trigger_with_thumb", "Trigger_with_index_finger", "Hold_fist_in_the_other_hand", "Grasp", "Walk", "Gather_fingers", "Snap_fingers", "Applaud", "Dual_hands_heart", "Put_two_fingers_together", "Take_two_fingers_apart", "Turn_over", "Move_fist_upward", "Move_fist_downward", "Move_fist_toward_left", "Move_fist_toward_right", "Bring_hand_close", "Push_away", "Thumb_upward", "Thumb_downward", "Thumb_toward_right", "Thumb_toward_left", "Thumbs_backward", "Thumbs_forward", "Move_hand_upward", "Move_hand_downward", "Move_hand_towards_left", "Move_hand_towards_right", "Draw_circle_with_hand_in_horizontal_surface", "Bent_number_2", "Bent_another_number_3", "Dual_fingers_heart", "Scroll_fingers_toward_left", "Scroll_fingers_toward_right", "Move_fingers_upward", "Move_fingers_downward", "Move_fingers_left", "Move_fingers_right", "Move_fingers_forward", "None"]
+
+#NVGesture labels, 26 
+#labels = ["Move hand left", "Move hand right", "Move hand up", "Move hand down", "Move two fingers left", "Move two fingers right", "Move two fingers up", "Move two fingers down", "Click index finger", "Call someone", "Open hand", "Shaking hand", "Show index finger", "Show two fingers", "Show three fingers", "Push hand up", "Push hand down", "Push hand out", "Pull hand in", "Rotate fingers CW", "Rotate figners CCW", "Push two fingers away", "Close hand two times", "Thumb up", "Okay gesture"]
 
 ###Pretrained RGB models
 ##Google Drive
 #https://drive.google.com/file/d/1V23zvjAKZr7FUOBLpgPZkpHGv8_D-cOs/view?usp=sharing
-##Baidu Netdisk
-#https://pan.baidu.com/s/114WKw0lxLfWMZA6SYSSJlw code:p1va
 
-def weighting_func(x):
-    return (1 / (1 + np.exp(-0.2 * (x - 9))))
+'''
+Where j is the iteration index of an active state, at which a
+gesture is detected, and t is calculated as 9
+'''
+def weighting_func(j):
+    return (1 / (1 + np.exp(-0.2 * (j - 9))))
 
+def executeAction(actions): 
+    print(f"Actions: {actions}")
+    for action in actions:
+        win32api.keybd_event(keymap[action], 0, 0, 0)
+    time.sleep(0.05)
+    for action in actions:
+        win32api.keybd_event(keymap[action], 0, KEYEVENTF_KEYUP, 0)
 
 opt = parse_opts_online()
 
@@ -79,7 +90,7 @@ def load_models(opt):
         print('loading checkpoint {}'.format(opt.resume_path))
         checkpoint = torch.load(opt.resume_path)
 
-        detector.load_state_dict(checkpoint['state_dict'])
+        detector.load_state_dict(checkpoint['state_dict'], strict=False)
 
     print('Model 1 \n', detector)
     pytorch_total_params = sum(p.numel() for p in detector.parameters() if
@@ -150,7 +161,10 @@ spatial_transform = Compose([
 
 opt.sample_duration = max(opt.sample_duration_clf, opt.sample_duration_det)
 fps = ""
-cap = cv2.VideoCapture(opt.video)
+prev_frame_time = 0
+new_frame_time = 0
+#cap = cv2.VideoCapture(opt.video)
+cap = cv2.VideoCapture(0)
 num_frame = 0
 clip = []
 active_index = 0
@@ -162,16 +176,42 @@ pre_predict = False
 detector.eval()
 classifier.eval()
 cum_sum = np.zeros(opt.n_classes_clf, )
-clf_selected_queue = np.zeros(opt.n_classes_clf, )
 det_selected_queue = np.zeros(opt.n_classes_det, )
+clf_selected_queue = np.zeros(opt.n_classes_clf, )
 myqueue_det = Queue(opt.det_queue_size, n_classes=opt.n_classes_det)
 myqueue_clf = Queue(opt.clf_queue_size, n_classes=opt.n_classes_clf)
 results = []
 prev_best1 = opt.n_classes_clf
 spatial_transform.randomize_parameters()
+result_count = 0
+prev_result_count = 0
+predicted = []
+
+
+## Start GUI configuration and save key binds:
+import gui.gui as gui
+gestures = gui.config
+print(gestures)
+
+with open("gui/keymap.json", "r") as read_file:
+    keymap = json.load(read_file)
+
 while cap.isOpened():
-    t1 = time.time()
+    new_frame_time = time.time()
     ret, frame = cap.read()
+
+    frame = cv2.flip(frame, 1) # Flip the image if the model was trained on Egocentric footage
+       
+    # Check if a frame was read successfully
+    if not ret:
+        print("End of video.")
+        break
+
+    # Check if the frame has valid dimensions before resizing
+    if frame.shape[0] == 0 or frame.shape[1] == 0:
+        print("Invalid frame detected. Skipping.")
+        continue
+
     if num_frame == 0:
         cur_frame = cv2.resize(frame,(320,240))
         cur_frame = Image.fromarray(cv2.cvtColor(cur_frame,cv2.COLOR_BGR2RGB))
@@ -179,6 +219,7 @@ while cap.isOpened():
         for i in range(opt.sample_duration):
             clip.append(cur_frame)
         clip = [spatial_transform(img) for img in clip]
+
     clip.pop(0)
     _frame = cv2.resize(frame,(320,240))
     _frame = Image.fromarray(cv2.cvtColor(_frame,cv2.COLOR_BGR2RGB))
@@ -186,14 +227,15 @@ while cap.isOpened():
     _frame = spatial_transform(_frame)
     clip.append(_frame)
     im_dim = clip[0].size()[-2:]
+
     try:
         test_data = torch.cat(clip, 0).view((opt.sample_duration, -1) + im_dim).permute(1, 0, 2, 3)
     except Exception as e:
         pdb.set_trace()
         raise e
+    
     inputs = torch.cat([test_data],0).view(1,3,opt.sample_duration,112,112)
     num_frame += 1
-
 
     ground_truth_array = np.zeros(opt.n_classes_clf + 1, )
     with torch.no_grad():
@@ -257,9 +299,9 @@ while cap.isOpened():
         if float(cum_sum[best1] - cum_sum[best2]) > opt.clf_threshold_pre:
             finished_prediction = True
             pre_predict = True
-
     else:
         active_index = 0
+
     if active == False and prev_active == True:
         finished_prediction = True
     elif active == True and prev_active == False:
@@ -273,23 +315,19 @@ while cap.isOpened():
                 if best1 != prev_best1:
                     if cum_sum[best1] > opt.clf_threshold_final:
                         results.append(((i * opt.stride_len) + opt.sample_duration_clf, best1))
-                        print('Early Detected - class : {} with prob : {} at frame {}'.format(best1, cum_sum[best1],
-                                                                                              (
-                                                                                                          i * opt.stride_len) + opt.sample_duration_clf))
+                        print('Early Detected - class : {} with prob : {} at frame {}'
+                              .format(best1, cum_sum[best1], ( i * opt.stride_len) + opt.sample_duration_clf))
             else:
                 if cum_sum[best1] > opt.clf_threshold_final:
                     if best1 == prev_best1:
                         if cum_sum[best1] > 5:
                             results.append(((i * opt.stride_len) + opt.sample_duration_clf, best1))
-                            print('Late Detected - class : {} with prob : {} at frame {}'.format(best1,
-                                                                                                 cum_sum[best1], (
-                                                                                                             i * opt.stride_len) + opt.sample_duration_clf))
+                            print('Late Detected - class : {} with prob : {} at frame {}'
+                                  .format(best1, cum_sum[best1], (i * opt.stride_len) + opt.sample_duration_clf))
                     else:
                         results.append(((i * opt.stride_len) + opt.sample_duration_clf, best1))
-
-                        print('Late Detected - class : {} with prob : {} at frame {}'.format(best1, cum_sum[best1],
-                                                                                             (
-                                                                                                         i * opt.stride_len) + opt.sample_duration_clf))
+                        print('Late Detected - class : {} with prob : {} at frame {}'
+                              .format(best1, cum_sum[best1], (i * opt.stride_len) + opt.sample_duration_clf))
 
             finished_prediction = False
             prev_best1 = best1
@@ -300,21 +338,49 @@ while cap.isOpened():
         pre_predict = False
 
     prev_active = active
-    elapsedTime = time.time() - t1
-    fps = "(Playback) {:.1f} FPS".format(1/elapsedTime)
+    elapsedTime = new_frame_time - prev_frame_time
+    
+    fps = "(Playback) {:.1f} FPS".format(1 / elapsedTime)
+
+    prev_frame_time = new_frame_time
+
+    result_count = len(results)
 
     if len(results) != 0:
-        predicted = np.array(results)[:, 1]
+        #predicted = np.array(results)[:, 1]
         prev_best1 = -1
+        if result_count > prev_result_count:
+            predicted.append(results[-1][1])
+            print('predicted classes: \t', predicted)  
+        cv2.putText(frame, labels[results[-1][1]], (16, 64), cv2.FONT_HERSHEY_SIMPLEX, 2, (38, 0, 255), 2, cv2.LINE_AA)
     else:
         predicted = []
 
-    print('predicted classes: \t', predicted)
+    prev_result_count = result_count
 
-    cv2.putText(frame, fps, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (38, 0, 255), 1, cv2.LINE_AA)
+    #0xBB plus, 0xBD minus
+
+    if len(predicted) != 0:
+        current = predicted.pop()
+
+        #treba nesto kao .find() u javascriptu za dobit actions array
+        actionList = []
+        temp_list = list(filter(lambda item: item.get("class") == current, gui.config))
+        if len(temp_list) > 0:
+            actionList = temp_list[0]["action"]
+            print(list(filter(lambda item: item.get("class") == current, gui.config)))
+            executeAction(actionList)
+
     cv2.imshow("Result", frame)
 
-    if cv2.waitKey(1)&0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        print('User exit.')
         break
+
+""" for r in results:
+    print(labels[r[1]]) 
+print(results) """
+cap.release()
 cv2.destroyAllWindows()
+
 

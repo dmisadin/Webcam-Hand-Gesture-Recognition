@@ -5,7 +5,7 @@ import pandas as pd
 import csv
 import os
 
-path_to_dataset = '/usr/home/kop/datasets/EgoGesture'
+path_to_dataset = './datasets/EgoGesture'
 
 paths = sorted(glob.glob(os.path.join(path_to_dataset,'labels-final-revised1/*/*/*' )))
 ########################################################
@@ -24,8 +24,10 @@ subject_ids_test = ['{num:02d}'.format(num=i) for i in [ 2, 9, 11, 14, 18, 19, 2
 def create_trainlist( subset ,file_name, class_types = 'all'):
 	
 	
-	folder1 = 'Color'
-	folder2 = 'rgb'
+	#folder1 = 'Color'
+	#folder2 = 'rgb'
+	folder1 = 'Depth'
+	folder2 = 'depth'
 	if subset == 'training': # Check subject id for validation/train split
 		subjects_to_process = subject_ids_train
 	elif subset == 'validation':
@@ -84,7 +86,7 @@ def create_trainlist( subset ,file_name, class_types = 'all'):
 	    for new_line in new_lines:
 	    	myfile.write(new_line)
 	    	myfile.write('\n')
-	print("Scuccesfully wrote file to:",file_path)
+	print("Succesfully wrote file to:",file_path)
 
 if __name__ == '__main__':
 	# This file helps to index videos in the dataset by creating a .txt file where every line is a video clip

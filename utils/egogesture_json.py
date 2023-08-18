@@ -11,7 +11,7 @@ def convert_csv_to_dict(csv_path, subset, labels):
     key_start_frame = []
     key_end_frame = []
     for i in range(data.shape[0]):
-        row = data.ix[i, :]
+        row = data.iloc[i, :]
         class_name = labels[row[1]-1]
         basename = str(row[0])
         start_frame = str(row[2])
@@ -42,7 +42,7 @@ def load_labels(label_csv_path):
     data = pd.read_csv(label_csv_path, delimiter=' ', header=None)
     labels = []
     for i in range(data.shape[0]):
-        labels.append(data.ix[i, 1])
+        labels.append(data.iloc[i, 1])
     return labels
 
 def convert_egogesture_csv_to_activitynet_json(label_csv_path, train_csv_path, 

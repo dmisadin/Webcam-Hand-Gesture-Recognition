@@ -1,7 +1,7 @@
 # Big annotation json files
 annotation_Jester/*.json
-annotation_nvGesture/*.json
-annotation_EgoGesture/*.json
+annotation_Kinetics/*.json
+annotation_UDF101/*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -13,6 +13,12 @@ __pycache__/
 
 # model weights
 *.pth
+results/nv_new/
+results/results-dominik.txt
+results/EgoGesture_RGB_all/
+
+# datasets
+datasets/webcam
 
 # opts file
 opts.json
@@ -107,6 +113,7 @@ ENV/
 
 # mkdocs documentation
 /site
+*.pdf
 
 # mypy
 .mypy_cache/
@@ -114,3 +121,4 @@ ENV/
 .DS_Store
 
 .vscode
+

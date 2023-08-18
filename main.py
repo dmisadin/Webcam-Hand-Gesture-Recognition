@@ -1,4 +1,6 @@
 import os
+
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.9,max_split_size_mb:512"
 import sys
 import json
 import numpy as np
@@ -26,6 +28,7 @@ if __name__ == '__main__':
     opt = parse_opts()
     if opt.root_path != '':
         opt.video_path = os.path.join(opt.root_path, opt.video_path)
+        print(opt.video_path)
         opt.annotation_path = os.path.join(opt.root_path, opt.annotation_path)
         opt.result_path = os.path.join(opt.root_path, opt.result_path)
         if not os.path.exists(opt.result_path):
@@ -47,8 +50,9 @@ if __name__ == '__main__':
         json.dump(vars(opt), opt_file)
 
     torch.manual_seed(opt.manual_seed)
-
+    torch.cuda.set_device('cuda:0')
     model, parameters = generate_model(opt)
+    model.cuda()
     print(model)
 
     # Egogesture, with "no-gesture" training, weighted loss
