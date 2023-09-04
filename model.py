@@ -257,8 +257,7 @@ def _construct_rgbdepth_model(base_model):
 
 def _modify_first_conv_layer(base_model, new_kernel_size1, new_filter_num):
     modules = list(base_model.modules())
-    first_conv_idx = list(filter(lambda x: isinstance(modules[x], nn.Conv3d),
-                                               list(range(len(modules)))))[0]
+    first_conv_idx = list(filter(lambda x: isinstance(modules[x], nn.Conv3d), list(range(len(modules)))))[0]
     conv_layer = modules[first_conv_idx]
     container = modules[first_conv_idx - 1]
  
@@ -272,7 +271,14 @@ def _modify_first_conv_layer(base_model, new_kernel_size1, new_filter_num):
 def modify_kernels(opt, model, modality):
     if modality == 'RGB' and opt.model not in ['c3d', 'squeezenet', 'mobilenet','shufflenet', 'mobilenetv2', 'shufflenetv2']:
         print("[INFO]: RGB model is used for init model")
-        model = _modify_first_conv_layer(model,3,3) ##### Check models trained (3,7,7) or (7,7,7)
+        ## ovaj dio samo za test
+        print(opt.n_classes)
+        print(opt.n_classes==2)
+        if opt.n_classes == 2: 
+            model = _modify_first_conv_layer(model,3,3) ##### Check models trained (3,7,7) or (7,7,7) ## used to be (model,3,3) ## (model,7,3) for nvgesture
+        else: 
+            model = _modify_first_conv_layer(model,3,3) ##### Check models trained (3,7,7) or (7,7,7) ## used to be (model,3,3) ## (model,7,3) for nvgesture
+
     elif modality == 'Depth':
         print("[INFO]: Converting the pretrained model to Depth init model")
         model = _construct_depth_model(model)
@@ -282,8 +288,7 @@ def modify_kernels(opt, model, modality):
         model = _construct_rgbdepth_model(model)
         print("[INFO]: Done. RGB-D model ready.")
     modules = list(model.modules())
-    first_conv_idx = list(filter(lambda x: isinstance(modules[x], nn.Conv3d),
-                                               list(range(len(modules)))))[0]
+    first_conv_idx = list(filter(lambda x: isinstance(modules[x], nn.Conv3d), list(range(len(modules)))))[0]
     #conv_layer = modules[first_conv_idx]
     #if conv_layer.kernel_size[0]> opt.sample_duration:
      #   model = _modify_first_conv_layer(model,int(opt.sample_duration/2),1)

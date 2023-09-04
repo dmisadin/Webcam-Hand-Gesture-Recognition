@@ -112,6 +112,7 @@ def load_models(opt):
 
     torch.manual_seed(opt.manual_seed)
     classifier, parameters = generate_model(opt)
+    classifier = classifier.cuda()
 
     if opt.resume_path:
         print('loading checkpoint {}'.format(opt.resume_path))
@@ -248,8 +249,7 @@ def main():
                         inputs_clf = inputs[:, -1, :, :, :].unsqueeze(1)
                     elif opt.modality_clf == 'RGB-D':
                         inputs_clf = inputs[:, :, :, :, :]
-                    inputs_clf = torch.Tensor(inputs_clf.numpy()[:,:,::2,:,:]) #koment 28.5. 19:08
-                    # print(inputs_clf)
+                    inputs_clf = torch.Tensor(inputs_clf.numpy()[:,:,::1,:,:])
                     outputs_clf = classifier(inputs_clf)
                     outputs_clf = F.softmax(outputs_clf, dim=1)
                     outputs_clf = outputs_clf.cpu().numpy()[0].reshape(-1, )

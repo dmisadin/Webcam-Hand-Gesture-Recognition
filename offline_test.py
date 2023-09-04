@@ -55,8 +55,8 @@ if __name__ == '__main__':
     def calculate_accuracy(outputs, targets, topk=(1,)):
         maxk = max(topk)
         batch_size = targets.size(0)
-        _, pred = outputs.topk(maxk, 1, True, True)
-        pred = pred.t()
+        _, pred = torch.from_numpy(outputs).topk(maxk, 1, True, True)
+        pred = pred.t().cuda()
         correct = pred.eq(targets.view(1, -1).expand_as(pred))
         ret = []
         for k in topk:
@@ -82,15 +82,16 @@ if __name__ == '__main__':
     opt.mean = get_mean(opt.norm_value)
     opt.std = get_std(opt.norm_value)
 
-    print(opt)
-    #with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
-    with open('D:/FESB/zavrsni rad/Real-time-GesRec/results/opts.json', 'w') as opt_file:
+    #print(opt)
+    with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
+    #with open('D:/FESB/zavrsni rad/Real-time-GesRec/results/opts.json', 'w') as opt_file:
         json.dump(vars(opt), opt_file)
 
     torch.manual_seed(opt.manual_seed)
 
     model, parameters = generate_model(opt)
-    print(model)
+    model = model.cuda()
+    #print(model)
     pytorch_total_params = sum(p.numel() for p in model.parameters() if
                             p.requires_grad)
     print("Total number of trainable parameters: ", pytorch_total_params)
@@ -130,7 +131,7 @@ if __name__ == '__main__':
     if opt.resume_path:
         print('loading checkpoint {}'.format(opt.resume_path))
         checkpoint = torch.load(opt.resume_path)
-        assert opt.arch == checkpoint['arch']
+        #assert opt.arch == checkpoint['arch']
 
         opt.begin_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
@@ -164,15 +165,16 @@ if __name__ == '__main__':
             targets = Variable(targets)
             outputs = model(inputs)
             if not opt.no_softmax_in_test:
-                outputs = F.softmax(outputs)
-            recorder.append(outputs.data.cpu().numpy().copy())
-        y_true.extend(targets.cpu().numpy().tolist())
-        y_pred.extend(outputs.argmax(1).cpu().numpy().tolist())
+                outputs = F.softmax(outputs, dim=1)
+                outputs = outputs.cpu().numpy()#[0].reshape(-1, )
+            #recorder.append(outputs.data.cpu().numpy().copy())
+        #y_true.extend(targets.cpu().numpy().tolist())
+        #y_pred.extend(outputs.argmax(1).cpu().numpy().tolist())
 
         #outputs = torch.unsqueeze(torch.mean(outputs, 0), 0)
         #pdb.set_trace()
-        # print(outputs.shape, targets.shape)
-        if outputs.size(1) <= 4:
+
+        if np.size(outputs, 1) <= 4:
 
             prec1= calculate_accuracy(outputs, targets, topk=(1,))
             precision = calculate_precision(outputs, targets) #
@@ -201,7 +203,7 @@ if __name__ == '__main__':
                     recall = recalls))
         else:
 
-            prec1, prec5 = calculate_accuracy(outputs, targets, topk=(1,5))
+            prec1, prec5 = calculate_accuracy(outputs, targets, topk=(1,5) )
             precision = calculate_precision(outputs, targets) #
             recall = calculate_recall(outputs,targets)
 

@@ -150,16 +150,16 @@ def calculate_accuracy(output, target, topk=(1,)):
 
 def calculate_precision(outputs, targets):
 
-    _, pred = outputs.topk(1, 1, True)
+    _, pred = torch.from_numpy(outputs).topk(1, 1, True)
     pred = pred.t()
-    return  precision_score(targets.view(-1), pred.view(-1), average = 'macro')
+    return  precision_score(targets.view(-1).cpu().data.numpy(), pred.view(-1).cpu().data.numpy(), average = 'macro', zero_division=0)
 
 
 def calculate_recall(outputs, targets):
 
-    _, pred = outputs.topk(1, 1, True)
+    _, pred = torch.from_numpy(outputs).topk(1, 1, True)
     pred = pred.t()
-    return  recall_score(targets.view(-1), pred.view(-1), average = 'macro')
+    return  recall_score(targets.view(-1).cpu().data.numpy(), pred.view(-1).cpu().data.numpy(), average = 'macro', zero_division=0)
 
 
 def save_checkpoint(state, is_best, opt):

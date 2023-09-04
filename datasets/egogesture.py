@@ -124,7 +124,6 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
     idx_to_class = {}
     for name, label in class_to_idx.items():
         idx_to_class[label] = name
-
     dataset = []
     list_subset = ''
     for x in subset:
@@ -170,6 +169,7 @@ def make_dataset(root_path, annotation_path, subset, n_samples_for_each_video,
                 sample_j['frame_indices'] = list(
                     range(j, min(n_frames + 1, j + sample_duration)))
                 dataset.append(sample_j)
+
     return dataset, idx_to_class
 
 
@@ -202,8 +202,8 @@ class EgoGesture(data.Dataset):
                  modality='RGB',
                  get_loader=get_default_video_loader):
 
-        if subset == 'training':
-            subset = ['training', 'validation']
+        #if subset == 'training':
+        #    subset = ['training', 'validation']
         self.data, self.class_names = make_dataset(
             root_path, annotation_path, subset, n_samples_for_each_video,
             sample_duration)

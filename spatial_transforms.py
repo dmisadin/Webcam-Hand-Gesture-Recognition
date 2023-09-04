@@ -333,10 +333,12 @@ class MultiScaleCornerCrop(object):
         return img.resize((self.size, self.size), self.interpolation)
 
     def randomize_parameters(self):
-        self.scale = self.scales[random.randint(0, len(self.scales) - 1)]
-        self.crop_position = self.crop_positions[random.randint(
-            0,
-            len(self.scales) - 1)]
+        if len(self.crop_positions) == 1:  ## If opt.train_crop == "center", then there is only one element in array ["c"]
+            self.scale = self.scales[0]
+            self.crop_position = self.crop_positions[0]
+        else:
+            self.scale = self.scales[random.randint(0, len(self.scales) - 1)]
+            self.crop_position = self.crop_positions[random.randint(0, len(self.scales) - 1)]
 
 
 class MultiScaleRandomCrop(object):

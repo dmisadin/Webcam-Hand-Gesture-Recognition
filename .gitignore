@@ -13,9 +13,10 @@ __pycache__/
 
 # model weights
 *.pth
-results/nv_new/
+results/*
 results/results-dominik.txt
 results/EgoGesture_RGB_all/
+runs
 
 # datasets
 datasets/webcam

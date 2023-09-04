@@ -165,6 +165,7 @@ prev_frame_time = 0
 new_frame_time = 0
 #cap = cv2.VideoCapture(opt.video)
 cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FPS, 30) # Limit FPS=30
 num_frame = 0
 clip = []
 active_index = 0
@@ -196,6 +197,7 @@ print(gestures)
 with open("gui/keymap.json", "r") as read_file:
     keymap = json.load(read_file)
 
+## Start loading camera feed
 while cap.isOpened():
     new_frame_time = time.time()
     ret, frame = cap.read()
@@ -377,9 +379,7 @@ while cap.isOpened():
         print('User exit.')
         break
 
-""" for r in results:
-    print(labels[r[1]]) 
-print(results) """
+
 cap.release()
 cv2.destroyAllWindows()
 

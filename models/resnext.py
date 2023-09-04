@@ -21,9 +21,7 @@ def conv3x3x3(in_planes, out_planes, stride=1):
 
 def downsample_basic_block(x, planes, stride):
     out = F.avg_pool3d(x, kernel_size=1, stride=stride)
-    zero_pads = torch.Tensor(
-        out.size(0), planes - out.size(1), out.size(2), out.size(3),
-        out.size(4)).zero_()
+    zero_pads = torch.Tensor( out.size(0), planes - out.size(1), out.size(2), out.size(3),out.size(4) ).zero_()
     if isinstance(out.data, torch.cuda.FloatTensor):
         zero_pads = zero_pads.cuda()
 
@@ -35,20 +33,13 @@ def downsample_basic_block(x, planes, stride):
 class ResNeXtBottleneck(nn.Module):
     expansion = 2
 
-    def __init__(self, inplanes, planes, cardinality, stride=1,
-                 downsample=None):
+    def __init__(self, inplanes, planes, cardinality, stride=1, downsample=None):
         super(ResNeXtBottleneck, self).__init__()
         mid_planes = cardinality * int(planes / 32)
         self.conv1 = nn.Conv3d(inplanes, mid_planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm3d(mid_planes)
-        self.conv2 = nn.Conv3d(
-            mid_planes,
-            mid_planes,
-            kernel_size=3,
-            stride=stride,
-            padding=1,
-            groups=cardinality,
-            bias=False)
+        self.conv2 = nn.Conv3d(mid_planes, mid_planes, kernel_size=3, 
+                               stride=stride, padding=1, groups=cardinality, bias=False)
         self.bn2 = nn.BatchNorm3d(mid_planes)
         self.conv3 = nn.Conv3d(
             mid_planes, planes * self.expansion, kernel_size=1, bias=False)
@@ -109,19 +100,14 @@ class ResNeXt(nn.Module):
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool3d(kernel_size=(3, 3, 3), stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 128, layers[0], shortcut_type,
-                                       cardinality)
-        self.layer2 = self._make_layer(
-            block, 256, layers[1], shortcut_type, cardinality, stride=2)
-        self.layer3 = self._make_layer(
-            block, 512, layers[2], shortcut_type, cardinality, stride=2)
-        self.layer4 = self._make_layer(
-            block, 1024, layers[3], shortcut_type, cardinality, stride=2)
+        self.layer1 = self._make_layer(block, 128, layers[0], shortcut_type, cardinality)
+        self.layer2 = self._make_layer(block, 256, layers[1], shortcut_type, cardinality, stride=2)
+        self.layer3 = self._make_layer(block, 512, layers[2], shortcut_type, cardinality, stride=2)
+        self.layer4 = self._make_layer(block, 1024, layers[3], shortcut_type, cardinality, stride=2)
         last_duration = int(math.ceil(sample_duration / 16))
         #last_duration = 1
         last_size = int(math.ceil(sample_size / 32))
-        self.avgpool = nn.AvgPool3d(
-            (last_duration, last_size, last_size), stride=1)
+        self.avgpool = nn.AvgPool3d((last_duration, last_size, last_size), stride=1)
         self.fc = nn.Linear(cardinality * 32 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -155,8 +141,7 @@ class ResNeXt(nn.Module):
                         bias=False), nn.BatchNorm3d(planes * block.expansion))
 
         layers = []
-        layers.append(
-            block(self.inplanes, planes, cardinality, stride, downsample))
+        layers.append(block(self.inplanes, planes, cardinality, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             layers.append(block(self.inplanes, planes, cardinality))
@@ -219,7 +204,7 @@ def resnext101(**kwargs):
 
 
 def resnext152(**kwargs):
-    """Constructs a ResNet-101 model.
+    """Constructs a ResNet-152 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 8, 36, 3], **kwargs)
     return model

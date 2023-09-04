@@ -1,6 +1,6 @@
 import os
-
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "garbage_collection_threshold:0.9,max_split_size_mb:512"
+import gc
 import sys
 import json
 import numpy as np
@@ -22,7 +22,14 @@ from train import train_epoch
 from validation import val_epoch
 import test
 
+from torch.utils.tensorboard import SummaryWriter 
+#writer = SummaryWriter('runs/egogesture')
 
+def graphModel(model, dataloader):
+    from torch.utils.tensorboard import SummaryWriter 
+    writer = SummaryWriter('runs/egogesture')
+    writer.add_graph(model, dataloader)
+    writer.close()
 
 if __name__ == '__main__':
     opt = parse_opts()
@@ -52,8 +59,9 @@ if __name__ == '__main__':
     torch.manual_seed(opt.manual_seed)
     torch.cuda.set_device('cuda:0')
     model, parameters = generate_model(opt)
+    #temp_model = model
     model.cuda()
-    print(model)
+    #print(model)
 
     # Egogesture, with "no-gesture" training, weighted loss
     # class_weights = torch.cat((0.012*torch.ones([1, 83]), 0.00015*torch.ones([1, 1])), 1)
@@ -95,6 +103,11 @@ if __name__ == '__main__':
             #SpatialElasticDisplacement(),
             ToTensor(opt.norm_value), norm_method
         ])
+        """ spatial_transform = Compose([
+            Scale(opt.sample_size),
+            CenterCrop(opt.sample_size),
+            ToTensor(opt.norm_value), norm_method
+        ]) """
         temporal_transform = TemporalRandomCrop(opt.sample_duration, opt.downsample)
         target_transform = ClassLabel()
         training_data = get_training_set(opt, spatial_transform,
@@ -111,7 +124,7 @@ if __name__ == '__main__':
         train_batch_logger = Logger(
             os.path.join(opt.result_path, 'train_batch.log'),
             ['epoch', 'batch', 'iter', 'loss', 'prec1', 'prec5', 'lr'])
-
+        
         if opt.nesterov:
             dampening = 0
         else:
@@ -154,7 +167,13 @@ if __name__ == '__main__':
         opt.begin_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
 
-
+    """ 
+    dataiter = iter(val_loader)
+    images, labels = next(dataiter)
+    graphModel(model, images)
+    del(dataiter, images, labels, temp_model)
+    gc.collect()
+    """
     print('run')
     for i in range(opt.begin_epoch, opt.n_epochs + 1):
     # for i in range(opt.begin_epoch, opt.begin_epoch + 10):

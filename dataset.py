@@ -14,7 +14,7 @@ def get_training_set(opt, spatial_transform, temporal_transform,
         subset = ['training', 'validation']
     else:
         subset = 'training'
-
+    print(subset)
     if opt.dataset == 'kinetics':
         training_data = Kinetics(
             opt.video_path,
@@ -103,7 +103,7 @@ def get_validation_set(opt, spatial_transform, temporal_transform,
         validation_data = EgoGesture(
             opt.video_path,
             opt.annotation_path,
-            'testing',
+            'validation',
             opt.n_val_samples,
             spatial_transform,
             temporal_transform,
@@ -125,12 +125,14 @@ def get_validation_set(opt, spatial_transform, temporal_transform,
 
 def get_test_set(opt, spatial_transform, temporal_transform, target_transform):
     assert opt.dataset in ['kinetics', 'jester', 'ucf101', 'egogesture', 'nvgesture']
-    assert opt.test_subset in ['val', 'test']
+    #assert opt.test_subset in ['val', 'test']
 
     if opt.test_subset == 'val':
         subset = 'validation'
     elif opt.test_subset == 'test':
         subset = 'testing'
+    #else:
+    #    subset = 'training'
     if opt.dataset == 'kinetics':
         test_data = Kinetics(
             opt.video_path,
