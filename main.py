@@ -25,6 +25,7 @@ import test
 from torch.utils.tensorboard import SummaryWriter 
 #writer = SummaryWriter('runs/egogesture')
 
+
 def graphModel(model, dataloader):
     from torch.utils.tensorboard import SummaryWriter 
     writer = SummaryWriter('runs/egogesture')
